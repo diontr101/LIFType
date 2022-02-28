@@ -1,29 +1,30 @@
-/* eslint-env node */
-
-import {chrome} from '../../.electron-vendors.cache.json';
+import {chrome} from '../../electron-vendors.config.json';
 import {join} from 'path';
-import {builtinModules} from 'module';
-import vue from '@vitejs/plugin-vue';
+import { builtinModules } from 'module';
+import {defineConfig} from 'vite';
+import {loadAndSetEnv} from '../../scripts/loadAndSetEnv.mjs';
+
 
 const PACKAGE_ROOT = __dirname;
 
+loadAndSetEnv(process.env.MODE, process.cwd());
+
+
 /**
- * @type {import('vite').UserConfig}
  * @see https://vitejs.dev/config/
  */
-const config = {
-  mode: process.env.MODE,
+export default defineConfig({
   root: PACKAGE_ROOT,
   resolve: {
     alias: {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
     },
   },
-  plugins: [vue()],
+  plugins: [],
   base: '',
   server: {
-    fs: {
-      strict: true,
+    fsServe: {
+      root: join(PACKAGE_ROOT, '../../'),
     },
   },
   build: {
@@ -31,18 +32,19 @@ const config = {
     target: `chrome${chrome}`,
     outDir: 'dist',
     assetsDir: '.',
+    terserOptions: {
+      ecma: 2020,
+      compress: {
+        passes: 2,
+      },
+      safari10: false,
+    },
     rollupOptions: {
-      input: join(PACKAGE_ROOT, 'index.html'),
       external: [
-        ...builtinModules.flatMap(p => [p, `node:${p}`]),
+        ...builtinModules.filter(m => m !== 'process' && m !== 'assert'),
       ],
     },
     emptyOutDir: true,
-    brotliSize: false,
   },
-  test: {
-    environment: 'happy-dom',
-  },
-};
+});
 
-export default config;
